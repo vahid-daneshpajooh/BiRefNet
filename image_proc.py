@@ -1,5 +1,5 @@
 import random
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageChops
 import numpy as np
 import cv2
 
@@ -36,6 +36,34 @@ def FB_blur_fusion_foreground_estimator(image, F, B, alpha, r=90):
         (image - alpha * blurred_F - (1 - alpha) * blurred_B)
     F = np.clip(F, 0, 1)
     return F, blurred_B
+
+def generate_visual(
+        image_pil: Image.Image,
+        image_masked: Image.Image
+        ) -> Image.Image:
+    """
+    Generates the postprocessed image, where background is highlighted in green
+
+    Args:
+        image_pil (PIL.Image.Image): original image.
+        image_masked (PIL.Image.Image): Postprocessed image with alpha channel.
+
+    Returns:
+        image_vis (PIL.Image.Image): visualization image.
+    """
+
+    image_vis = ImageChops.invert(image_pil)
+
+    r, g, b = image_vis.split()
+    # Increase the intensity of the red component
+    r = r.point(lambda i: i * 0.1)
+    g = g.point(lambda i: i * 1)
+    b = b.point(lambda i: i * 0.1)
+    # Merge the components back together
+    image_vis = Image.merge('RGB', (r, g, b))
+    image_vis.paste(image_masked, (0, 0), image_masked)
+
+    return image_vis
 
 
 def preproc(image, label, preproc_methods=['flip']):
